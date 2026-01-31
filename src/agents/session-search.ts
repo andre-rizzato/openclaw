@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 
-function getLancedbModule(): typeof import("@lancedb/lancedb") | null {
+function getLancedbModule(): any | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require("@lancedb/lancedb");
@@ -11,7 +11,7 @@ function getLancedbModule(): typeof import("@lancedb/lancedb") | null {
   }
 }
 
-function getOpenAIModule(): typeof import("openai") | null {
+function getOpenAIModule(): any | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require("openai");
@@ -73,6 +73,8 @@ export type SearchOptions = {
   openaiKey?: string;
   embeddingModel?: string;
   embeddingDim?: number;
+  // optional override to inject a LanceDB-like module (useful for tests)
+  lancedbModule?: any;
 };
 
 export async function searchSessions(opts: SearchOptions): Promise<SearchResult[]> {
@@ -86,7 +88,8 @@ export async function searchSessions(opts: SearchOptions): Promise<SearchResult[
 
   const qvec = await embedTextOpenAI(openaiKey, embeddingModel, opts.query, dim);
 
-  const lancedb = getLancedbModule();
+  // allow injection for deterministic tests
+  const lancedb = opts.lancedbModule ?? getLancedbModule();
   if (lancedb) {
     try {
       const db = await lancedb.connect(dbPath);

@@ -15,13 +15,14 @@ const mockSearchHits = [
   { id: "session2-0", text: "I like pizza", score: 0.5 },
 ];
 
-vi.mock("@lancedb/lancedb", () => ({
+// Prepare a fake LanceDB module (injected) and a mocked OpenAI
+const fakeLance = {
   connect: async (dbPath: string) => ({
     openTable: async (name: string) => ({
       search: async ({ vector, k }: any) => mockSearchHits.slice(0, k),
     }),
   }),
-}));
+};
 
 vi.mock("openai", () => {
   return class MockOpenAI {
@@ -32,15 +33,15 @@ vi.mock("openai", () => {
   } as any;
 });
 
-import { searchSessions } from "./session-search";
-
 test("uses LanceDB search when available", async () => {
+  const { searchSessions } = await import("./session-search");
   const res = await searchSessions({
     query: "cats",
     k: 2,
     dbPath: tmp,
     tableName: "session_index",
     embeddingDim: 4,
+    lancedbModule: fakeLance,
   });
   expect(res.length).toBeGreaterThanOrEqual(1);
   expect(res[0].id).toBe("session1-0");
@@ -48,9 +49,19 @@ test("uses LanceDB search when available", async () => {
 });
 
 // Test 2: fallback to JSONL when LanceDB not available
+vi.resetModules();
 vi.unmock("@lancedb/lancedb");
+vi.mock("openai", () => {
+  return class MockOpenAI {
+    constructor(opts: any) {}
+    embeddings = {
+      create: async ({ model, input }: any) => ({ data: [{ embedding: [0.1, 0.2, 0.3, 0.4] }] }),
+    };
+  } as any;
+});
 
 test("falls back to JSONL linear search", async () => {
+  const { searchSessions } = await import("./session-search");
   const outFile = path.join(tmp, "session_index.jsonl");
   const e1 = { id: "s1-0", text: "cats are great", vector: [0.1, 0.2, 0.3, 0.4] };
   const e2 = { id: "s2-0", text: "pizza is good", vector: [1, 0, 0, 0] };
