@@ -37,8 +37,11 @@ import {
   disablePrometheusExport,
   incrementSearchCount,
   incrementIndexed,
+  _setPromClientForTest,
 } from "./session-metrics";
 import prom from "prom-client";
+// inject the mocked prom-client so enablePrometheusExport doesn't call require()
+_setPromClientForTest(prom);
 
 test("enables prom exporter and updates gauges", async () => {
   // ensure mock shape is present

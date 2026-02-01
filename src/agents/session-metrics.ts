@@ -38,6 +38,13 @@ let promRegistry: any = null;
 let promGauges: { searches?: any; avgLatencyMs?: any; indexed?: any } = {};
 let promServer: any = null;
 
+// Test helper: allow tests to inject a mocked prom-client to avoid requiring the
+// optional package at runtime during unit tests.
+let promClientOverride: any = null;
+export function _setPromClientForTest(obj: any) {
+  promClientOverride = obj;
+}
+
 export function enablePrometheusExport(opts?: {
   startServer?: boolean;
   port?: number;
@@ -47,7 +54,9 @@ export function enablePrometheusExport(opts?: {
   if (promEnabled) return true;
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    let promRaw = require("prom-client");
+    // allow tests to inject a mocked prom-client via _setPromClientForTest
+    // so we don't require an optional runtime dependency during unit tests
+    let promRaw = promClientOverride ?? require("prom-client");
     // handle possible ESM default export wrapping when mocked/imported
     let prom: any = promRaw && promRaw.default ? promRaw.default : promRaw;
 
