@@ -47,17 +47,20 @@ export function enablePrometheusExport(opts?: {
   if (promEnabled) return true;
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    // eslint-disable-next-line no-console
-    console.error("enablePrometheusExport: before require");
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    let prom = require("prom-client");
-    // eslint-disable-next-line no-console
-    console.error("enablePrometheusExport: after require", typeof prom);
+    let promRaw = require("prom-client");
     // handle possible ESM default export wrapping when mocked/imported
-    if (prom && prom.default) {
+    let prom: any = promRaw && promRaw.default ? promRaw.default : promRaw;
+
+    // sanity checks - fail loudly in tests so we can diagnose mocking issues
+    if (!prom || typeof prom.Registry !== "function" || typeof prom.Gauge !== "function") {
       // eslint-disable-next-line no-console
-      console.error("enablePrometheusExport: using default export");
-      prom = prom.default;
+      console.error(
+        "enablePrometheusExport: prom-client shape check failed",
+        Object.keys(prom || {}),
+      );
+      throw new Error(
+        "prom-client does not expose expected Registry/Gauge; ensure your mock provides named exports or a default export with { Registry, Gauge }",
+      );
     }
     promRegistry = new prom.Registry();
     prom.collectDefaultMetrics({ register: promRegistry });
@@ -127,6 +130,7 @@ export function enablePrometheusExport(opts?: {
     // helpful debugging during tests
     // eslint-disable-next-line no-console
     console.error("enablePrometheusExport error", err);
+    if (process.env.NODE_ENV === "test") throw err;
     return false;
   }
 }

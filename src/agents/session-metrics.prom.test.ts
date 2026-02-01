@@ -1,32 +1,36 @@
 import { test, expect, vi } from "vitest";
 
-vi.mock("prom-client", () => {
-  const created: any[] = [];
-  class Registry {
-    metrics() {
-      return "metrics";
+vi.mock(
+  "prom-client",
+  () => {
+    const created: any[] = [];
+    class Registry {
+      metrics() {
+        return "metrics";
+      }
     }
-  }
-  class Gauge {
-    name: string;
-    lastValue: number | null = null;
-    constructor(opts: any) {
-      this.name = opts.name;
-      created.push(this);
+    class Gauge {
+      name: string;
+      lastValue: number | null = null;
+      constructor(opts: any) {
+        this.name = opts.name;
+        created.push(this);
+      }
+      set(v: number) {
+        this.lastValue = v;
+      }
     }
-    set(v: number) {
-      this.lastValue = v;
-    }
-  }
-  const mod = {
-    Registry,
-    Gauge,
-    collectDefaultMetrics: (_opts: any) => {},
-    __createdGauges: created,
-  };
-  // support both default and named imports
-  return { default: mod, ...mod };
-});
+    const mod = {
+      Registry,
+      Gauge,
+      collectDefaultMetrics: (_opts: any) => {},
+      __createdGauges: created,
+    };
+    // support both default and named imports
+    return { default: mod, ...mod };
+  },
+  { virtual: true },
+);
 
 import {
   enablePrometheusExport,
