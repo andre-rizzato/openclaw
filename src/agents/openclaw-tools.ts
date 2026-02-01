@@ -16,6 +16,7 @@ import { createSessionsHistoryTool } from "./tools/sessions-history-tool.js";
 import { createSessionsListTool } from "./tools/sessions-list-tool.js";
 import { createSessionsSendTool } from "./tools/sessions-send-tool.js";
 import { createSessionsSpawnTool } from "./tools/sessions-spawn-tool.js";
+import { createSessionRetrievalTool } from "./tools/session-retrieval-tool.js";
 import { createWebFetchTool, createWebSearchTool } from "./tools/web-tools.js";
 import { createTtsTool } from "./tools/tts-tool.js";
 
@@ -69,6 +70,11 @@ export function createOpenClawTools(options?: {
   const webFetchTool = createWebFetchTool({
     config: options?.config,
     sandboxed: options?.sandboxed,
+  });
+  const sessionRetrievalTool = createSessionRetrievalTool({
+    agentSessionKey: options?.agentSessionKey,
+    sandboxed: options?.sandboxed,
+    config: options?.config,
   });
   const tools: AnyAgentTool[] = [
     createBrowserTool({
@@ -134,6 +140,8 @@ export function createOpenClawTools(options?: {
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
     }),
+    // Session retrieval/search tool (opt-in via config.tools.sessions.retrieval.enabled = true)
+    ...(sessionRetrievalTool ? [sessionRetrievalTool] : []),
     ...(webSearchTool ? [webSearchTool] : []),
     ...(webFetchTool ? [webFetchTool] : []),
     ...(imageTool ? [imageTool] : []),

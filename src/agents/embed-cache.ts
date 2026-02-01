@@ -62,7 +62,13 @@ export async function getEmbedding(text: string, opts: EmbedOptions = {}): Promi
   lastCallTs = Date.now();
 
   // perform embedding
-  const client = new OpenAI({ apiKey: o.apiKey });
+  // OpenAI may be a constructor or a pre-instantiated client (in tests)
+  let client: any;
+  if (typeof OpenAI === "function") {
+    client = new OpenAI({ apiKey: o.apiKey });
+  } else {
+    client = OpenAI;
+  }
   const res = await client.embeddings.create({ model: o.model, input: text });
   const vec = (res.data && res.data[0] && (res.data[0] as any).embedding) as number[];
   cache.set(key, { vec, ts: Date.now() });

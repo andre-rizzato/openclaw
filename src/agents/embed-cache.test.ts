@@ -1,21 +1,20 @@
 import { test, expect, vi } from "vitest";
 import { _clearCache, _getCacheSize, getEmbedding } from "./embed-cache";
 
-vi.mock("openai", () => {
-  return class MockOpenAI {
-    constructor(opts: any) {}
-    embeddings = {
-      create: async ({ model, input }: any) => ({ data: [{ embedding: [1, 2, 3, 4] }] }),
-    };
-  } as any;
-});
+// Use injected fake modules in tests to avoid requiring real OPENAI_API_KEY
 
 test("caches embeddings and respects ttl", async () => {
   _clearCache();
   expect(_getCacheSize()).toBe(0);
-  const v1 = await getEmbedding("hello", { model: "m", dim: 4 });
+  // inject a simple openaiModule-like object so no real credentials are needed
+  const fake = {
+    embeddings: {
+      create: async () => ({ data: [{ embedding: [1, 2, 3, 4] }] }),
+    },
+  };
+  const v1 = await getEmbedding("hello", { model: "m", dim: 4, openaiModule: fake as any });
   expect(_getCacheSize()).toBe(1);
-  const v2 = await getEmbedding("hello", { model: "m", dim: 4 });
+  const v2 = await getEmbedding("hello", { model: "m", dim: 4, openaiModule: fake as any });
   expect(_getCacheSize()).toBe(1);
   expect(v1).toEqual(v2);
 });
@@ -32,15 +31,15 @@ test("rate-limits outbound calls when openai present", async () => {
     },
   };
 
-  // inject openaiModule to bypass require
+  // inject openaiModule directly as an object
   const p1 = getEmbedding("a", {
-    openaiModule: () => fakeOpenAI,
+    openaiModule: fakeOpenAI as any,
     model: "m",
     dim: 3,
     minIntervalMs: 50,
   });
   const p2 = getEmbedding("b", {
-    openaiModule: () => fakeOpenAI,
+    openaiModule: fakeOpenAI as any,
     model: "m",
     dim: 3,
     minIntervalMs: 50,

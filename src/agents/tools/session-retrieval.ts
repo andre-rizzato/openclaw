@@ -1,5 +1,5 @@
-import { searchSessions } from "../session-search";
-import { incrementSearchCount } from "../session-metrics";
+import { searchSessions } from "../session-search.js";
+import { incrementSearchCount } from "../session-metrics.js";
 
 export type SessionRetrievalParams = {
   query: string;

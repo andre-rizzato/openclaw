@@ -28,20 +28,18 @@ function mockEmbed(text: string, dim = 1536): number[] {
   return out;
 }
 
+// Use embedding cache with rate-limit and TTL
+import { getEmbedding } from "./embed-cache.js";
+
 async function embedTextOpenAI(
   apiKey: string | undefined,
   model: string,
   text: string,
   dim = 1536,
 ): Promise<number[]> {
-  const OpenAI = getOpenAIModule();
-  if (!OpenAI) {
-    return mockEmbed(text, dim);
-  }
   try {
-    const client = new OpenAI({ apiKey });
-    const res = await client.embeddings.create({ model, input: text });
-    return (res.data && res.data[0] && (res.data[0] as any).embedding) as number[];
+    const vec = await getEmbedding(text, { apiKey, model, dim });
+    return vec;
   } catch (err) {
     return mockEmbed(text, dim);
   }
@@ -86,6 +84,7 @@ export async function searchSessions(opts: SearchOptions): Promise<SearchResult[
     opts.embeddingModel ?? process.env.EMBEDDING_MODEL ?? "text-embedding-3-small";
   const dim = opts.embeddingDim ?? 1536;
 
+  const start = Date.now();
   const qvec = await embedTextOpenAI(openaiKey, embeddingModel, opts.query, dim);
 
   // allow injection for deterministic tests
@@ -97,12 +96,18 @@ export async function searchSessions(opts: SearchOptions): Promise<SearchResult[
       // If the table provides a search method, use it.
       if (typeof (table as any).search === "function") {
         const hits = await (table as any).search({ vector: qvec, k });
-        return (hits as any[]).map((h: any) => ({
+        const out = (hits as any[]).map((h: any) => ({
           id: h.id,
           text: h.text ?? "",
           score: h.score ?? 0,
           metadata: h,
         }));
+        try {
+          const metrics = require("./session-metrics.js");
+          if (metrics && typeof metrics.incrementSearchCount === "function")
+            metrics.incrementSearchCount(1, Date.now() - start);
+        } catch (e) {}
+        return out;
       }
       // else, fall through to JSONL fallback
     } catch (err) {
@@ -136,5 +141,11 @@ export async function searchSessions(opts: SearchOptions): Promise<SearchResult[
   });
 
   results.sort((a, b) => b.score - a.score);
-  return results.slice(0, k);
+  const out = results.slice(0, k);
+  try {
+    const metrics = require("./session-metrics.js");
+    if (metrics && typeof metrics.incrementSearchCount === "function")
+      metrics.incrementSearchCount(1, Date.now() - start);
+  } catch (e) {}
+  return out;
 }

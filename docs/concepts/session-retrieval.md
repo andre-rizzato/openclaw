@@ -29,3 +29,19 @@ const hits = await searchSessions({
 
 - The function attempts to use an OpenAI embedding (via the optional `openai` package) to embed queries; it falls back to a deterministic mock embedding when OpenAI is not available.
 - Tests include both a mocked LanceDB path and a JSONL fallback path for deterministic behavior in CI.
+
+## Metrics export (opt-in) 🔧
+
+- Session retrieval metrics (search counts, average latency, indexed counts) are available via `src/agents/session-metrics.ts`.
+- For early observability, you can opt-in to file-based metric snapshots using `enableFileMetricsExport(filePath)`; this will append NDJSON snapshots whenever metrics change. (Prometheus export can be added later if desired.)
+- You can enable a Prometheus endpoint via the optional `prom-client` integration: `enablePrometheusExport({ startServer: true, port: 9464 })`.
+
+## Quick demo (index → search) 🧪
+
+Run the included demo script to write a small JSONL index and run the `search-sessions` CLI:
+
+```bash
+bash scripts/rag/demo-index-and-search.sh
+```
+
+This uses `pnpm tsx` to invoke the TypeScript CLI and prints the top hits and metric snapshot.
