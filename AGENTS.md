@@ -176,3 +176,7 @@
 - Publish: `npm publish --access public --otp="<otp>"` (run from the package dir).
 - Verify without local npmrc side effects: `npm view <pkg> version --userconfig "$(mktemp)"`.
 - Kill the tmux session after publish.
+
+
+## Pair Programmer Agent 
+See docs/pair-programmer.md for details.

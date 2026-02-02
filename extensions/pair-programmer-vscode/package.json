@@ -1,0 +1,19 @@
+{
+  "name": "@openclaw/pair-programmer-vscode",
+  "version": "0.1.0",
+  "description": "Pair Programmer VSCode extension (PoC)",
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "prepare": "pnpm build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "vscode": "^1.1.37"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  }
+}

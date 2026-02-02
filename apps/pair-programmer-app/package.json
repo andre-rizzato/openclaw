@@ -1,0 +1,12 @@
+{
+  "name": "pair-programmer-app",
+  "version": "0.1.0",
+  "description": "Pair Programmer Electron app (PoC)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --no-sandbox"
+  },
+  "devDependencies": {
+    "electron": "^27.0.0"
+  }
+}
